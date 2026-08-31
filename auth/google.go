@@ -16,12 +16,23 @@ type GoogleProvider struct {
 }
 
 // GoogleScopes defines the scopes needed for GTM API access.
+//
+// Read-only by deliberate choice. Every read method this server calls accepts
+// tagmanager.readonly as an alternative to edit.containers, verified against the
+// Tag Manager API v2 reference on 2026-08-31 — including workspaces.getStatus and
+// folders.entities, which are GETs that some Google APIs scope as edits.
+//
+// Restoring write capability means adding back the five scopes below AND
+// re-consenting: a token is issued against the scopes granted at sign-in, so
+// widening this slice does not widen an existing token.
+//
+//	tagmanager.delete.containers
+//	tagmanager.edit.containers
+//	tagmanager.edit.containerversions
+//	tagmanager.manage.accounts
+//	tagmanager.publish
 var GoogleScopes = []string{
-	"https://www.googleapis.com/auth/tagmanager.delete.containers",
-	"https://www.googleapis.com/auth/tagmanager.edit.containers",
-	"https://www.googleapis.com/auth/tagmanager.edit.containerversions",
-	"https://www.googleapis.com/auth/tagmanager.manage.accounts",
-	"https://www.googleapis.com/auth/tagmanager.publish",
+	"https://www.googleapis.com/auth/tagmanager.readonly",
 }
 
 // NewGoogleProvider creates a new Google OAuth provider.

@@ -60,8 +60,19 @@ func main() {
 	// Add logging middleware
 	server.AddReceivingMiddleware(middleware.NewLoggingMiddleware(logger))
 
-	// Register tools
-	registerTools(server)
+	// Register tools. Mutating tools are withheld unless explicitly enabled, so
+	// the tool list itself reflects what this deployment is allowed to do.
+	registerTools(server, cfg.EnableMutations)
+	if cfg.EnableMutations {
+		logger.Warn("mutation tools ENABLED",
+			"env", "GTM_ENABLE_MUTATIONS",
+			"note", "writes still require write scopes on the Google token",
+		)
+	} else {
+		logger.Info("read-only mode: mutation tools not registered",
+			"enable_with", "GTM_ENABLE_MUTATIONS=true",
+		)
+	}
 
 	// Create HTTP handler for MCP
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
@@ -259,9 +270,9 @@ func main() {
 }
 
 // registerTools adds MCP tools to the server.
-func registerTools(server *mcp.Server) {
+func registerTools(server *mcp.Server, enableMutations bool) {
 	registerUtilityTools(server)
-	gtm.RegisterTools(server)
+	gtm.RegisterTools(server, enableMutations)
 }
 
 // maxBytesHandler wraps an http.Handler with a request body size limit.

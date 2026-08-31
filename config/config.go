@@ -46,6 +46,14 @@ type Config struct {
 	// Set to true when behind a reverse proxy (e.g. Caddy).
 	TrustProxy bool
 
+	// EnableMutations registers the create/update/delete/publish tools.
+	// Defaults to false: the server exposes read tools only unless a deployment
+	// opts in explicitly. This is defence in depth behind the OAuth scope, not a
+	// substitute for it — a readonly token fails a write at the API regardless.
+	// Withholding the tools stops a model attempting a write and then reasoning
+	// about the 403 it gets back.
+	EnableMutations bool
+
 	// AutoRefreshMaxAge bounds the silent renewal chain. tryAutoRefresh extends a
 	// bearer in place without rotating it, so its expiry bounds nothing on its
 	// own; past this age since the token was issued the server stops renewing and
@@ -76,6 +84,7 @@ func Load() (*Config, error) {
 		ServiceAccountAPIKey:  getEnv("SERVICE_ACCOUNT_API_KEY", ""),
 		ServiceAccountKeyJSON: getEnv("GOOGLE_SERVICE_ACCOUNT_KEY_JSON", ""),
 		TrustProxy:            getEnvBool("TRUST_PROXY", false),
+		EnableMutations:       getEnvBool("GTM_ENABLE_MUTATIONS", false),
 		AutoRefreshMaxAge:     getEnvDuration("AUTH_AUTO_REFRESH_MAX_AGE", 7*24*time.Hour),
 	}
 

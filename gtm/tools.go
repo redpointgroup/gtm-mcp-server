@@ -9,13 +9,34 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// RegisterTools adds all GTM tools to the MCP server.
-func RegisterTools(server *mcp.Server) {
-	// Read operations
+// RegisterTools adds GTM tools to the MCP server. Read tools are always
+// registered; the mutating tools only when enableMutations is true.
+//
+// Note that registerUpdateAccount sat under a "Read operations" heading upstream
+// despite calling accounts.update. It is a mutation and is gated as one.
+func RegisterTools(server *mcp.Server, enableMutations bool) {
+	registerReadTools(server)
+
+	if enableMutations {
+		registerMutationTools(server)
+	}
+
+	// Prompts (template workflows). Several describe write workflows, but a
+	// prompt is inert text — it cannot call a tool that was never registered.
+	RegisterPrompts(server)
+}
+
+// registerReadTools adds every tool that only ever issues GTM list/get calls.
+// All of these accept the tagmanager.readonly scope (verified against the Tag
+// Manager API v2 reference, 2026-08-31).
+func registerReadTools(server *mcp.Server) {
+	// Accounts, containers, workspaces
 	registerListAccounts(server)
-	registerUpdateAccount(server)
 	registerListContainers(server)
 	registerListWorkspaces(server)
+	registerGetWorkspaceStatus(server)
+
+	// Container entities
 	registerListTags(server)
 	registerGetTag(server)
 	registerListTriggers(server)
@@ -27,8 +48,34 @@ func RegisterTools(server *mcp.Server) {
 	registerListTemplates(server)
 	registerGetTemplate(server)
 	registerListVersions(server)
+	registerListBuiltInVariables(server)
 
-	// Write operations
+	// Clients and transformations (server-side containers)
+	registerListClients(server)
+	registerGetClient(server)
+	registerListTransformations(server)
+	registerGetTransformation(server)
+
+	// Static parameter-format helpers (no API call)
+	registerGetTagTemplates(server)
+	registerGetTriggerTemplates(server)
+
+	// Resources (URI-based read access)
+	RegisterResources(server)
+}
+
+// registerMutationTools adds every tool that creates, updates, deletes or
+// publishes. Gated behind GTM_ENABLE_MUTATIONS (default off) — see
+// config.Config.EnableMutations.
+func registerMutationTools(server *mcp.Server) {
+	// Accounts and containers
+	registerUpdateAccount(server)
+	registerCreateContainer(server)
+	registerUpdateContainer(server)
+	registerDeleteContainer(server)
+	registerCreateWorkspace(server)
+
+	// Tags, triggers, variables
 	registerCreateTag(server)
 	registerUpdateTag(server)
 	registerDeleteTag(server)
@@ -38,52 +85,30 @@ func RegisterTools(server *mcp.Server) {
 	registerCreateVariable(server)
 	registerUpdateVariable(server)
 	registerDeleteVariable(server)
-	registerCreateContainer(server)
-	registerUpdateContainer(server)
-	registerDeleteContainer(server)
-	registerCreateWorkspace(server)
 
-	// Workspace status
-	registerGetWorkspaceStatus(server)
-
-	// Version operations
+	// Versions — publishing is the live-site-affecting one
 	registerCreateVersion(server)
 	registerPublishVersion(server)
 
-	// Template operations
+	// Templates
 	registerImportGalleryTemplate(server)
 	registerCreateTemplate(server)
 	registerUpdateTemplate(server)
 	registerDeleteTemplate(server)
 
 	// Built-in variables
-	registerListBuiltInVariables(server)
 	registerEnableBuiltInVariables(server)
 	registerDisableBuiltInVariables(server)
 
 	// Clients (server-side containers)
-	registerListClients(server)
-	registerGetClient(server)
 	registerCreateClient(server)
 	registerUpdateClient(server)
 	registerDeleteClient(server)
 
 	// Transformations (server-side containers)
-	registerListTransformations(server)
-	registerGetTransformation(server)
 	registerCreateTransformation(server)
 	registerUpdateTransformation(server)
 	registerDeleteTransformation(server)
-
-	// Templates (help LLMs with correct parameter formats)
-	registerGetTagTemplates(server)
-	registerGetTriggerTemplates(server)
-
-	// Resources (URI-based read access)
-	RegisterResources(server)
-
-	// Prompts (template workflows)
-	RegisterPrompts(server)
 }
 
 // getClient creates a GTM client from the request context.
