@@ -20,6 +20,13 @@ dist/
 
 # Binary
 gtm-mcp-server
+gtm-mcp-server.exe
+
+# Persisted OAuth tokens (TOKEN_STORE_PATH)
+.gtm-token-store.json
+
+# Local server logs (gtm-server.ps1)
+logs/
 
 # Deployment
 deploy.sh
